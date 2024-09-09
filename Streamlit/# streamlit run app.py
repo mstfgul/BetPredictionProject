@@ -6,13 +6,13 @@ import pickle
 
 # Function to load the model
 def load_model():
-    with open('gradient_boosting.pkl', 'rb') as f:
+    with open('Gradient Boosting.pkl', 'rb') as f:
         model = pickle.load(f)
     return model
 
 # Function to load the encoders
 def load_encoders():
-    with open('label_encoders.pkl', 'rb') as f:
+    with open('encoder.pkl', 'rb') as f:
         encoders = pickle.load(f)
     return encoders
 
@@ -31,7 +31,7 @@ def label_encode(df, columns_to_encode):
         encoders[col] = le  # Store the encoder for each column
 
     # Save the encoders to a file
-    with open('label_encoders.pkl', 'wb') as f:
+    with open('encoder.pkl', 'wb') as f:
         pickle.dump(encoders, f)
 
     return df
@@ -58,22 +58,20 @@ def main():
     model = load_model()
     encoders = load_encoders()
 
-    # User input fields
-    st.header('Enter match details:')
-    home_team = st.selectbox('Home Team', df['HomeTeam'].unique())
-    away_team = st.selectbox('Away Team', df['AwayTeam'].unique())
-    date = st.date_input('Match Date')
-    half_time_result = st.selectbox('Half Time Result (H/D/A)', ['H', 'D', 'A'])
-    full_time_result = st.selectbox('Full Time Result (H/D/A)', ['H', 'D', 'A'])
+    # Sidebar
 
-    # Collect user input
-    user_input = {
-        'HomeTeam': home_team,
-        'AwayTeam': away_team,
-        'Date': date.strftime('%Y-%m-%d'),  # Convert date to string
-        'HTR': half_time_result,
-        'FTR': full_time_result
-    }
+    st.sidebar.header('Match Details')
+    st.sidebar.markdown('Enter the details of the match to predict the outcome:')
+    user_input = {}
+
+    # Get user input
+
+    user_input['Date'] = st.sidebar.date_input('Date')
+    user_input['HomeTeam'] = st.sidebar.text_input('Home Team')
+    user_input['AwayTeam'] = st.sidebar.text_input('Away Team')
+    
+
+                                            
 
     # Preprocess the input
     input_data = preprocess_input(user_input, encoders)
