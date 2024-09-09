@@ -1,7 +1,5 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
-from sklearn.preprocessing import LabelEncoder
 import pickle
 
 # Function to load the model
@@ -16,71 +14,74 @@ def load_encoders():
         encoders = pickle.load(f)
     return encoders
 
-# Load the cleaned dataset
-df = pd.read_csv('../visualizations/df_filled.csv')
+# Load the encoders
+encoders = load_encoders()
 
-# Define columns to encode (just the column names, without descriptions)
-columns_to_encode = ['FTR', 'HTR', 'Date', 'HomeTeam', 'AwayTeam']
+# Define predefined team names
+Home_teams = ['Aalst', 'Anderlecht', 'Antwerp', 'Beerschot VA', 'Bergen', 'Beveren', 
+              'Cercle Brugge', 'Charleroi', 'Club Brugge', 'Dender', 'Eupen', 'FC Brussels', 
+              'Genk', 'Gent', 'Germinal', 'Harelbeke', 'Heusden Zolder', 'Kortrijk', 'Lierse', 
+              'Lokeren', 'Lommel', 'Louvieroise', 'Mechelen', 'Molenbeek', 'Mouscron', 'Mouscron-Peruwelz', 
+              'Oostende', 'Oud-Heverlee Leuven', 'RWD Molenbeek', 'Roeselare', 'Seraing', 'St Truiden', 
+              'St. Gilloise', 'Standard', 'Tubize', 'Waasland-Beveren', 'Waregem', 'Westerlo']
+Away_teams = Home_teams  # Same list for away teams
 
-# Function to label encode the dataset
-def label_encode(df, columns_to_encode):
-    encoders = {}
-    for col in columns_to_encode:
-        le = LabelEncoder()
-        df[col] = le.fit_transform(df[col])
-        encoders[col] = le  # Store the encoder for each column
+# Function to get encoded values for team names
+def get_encoded_values(teams, encoder):
+    encoded_values = {}
+    for team in teams:
+        try:
+            encoded_values[team] = encoder.transform([team])[0]
+        except ValueError:
+            encoded_values[team] = None  # Handle unseen labels gracefully
+    return encoded_values
 
-    # Save the encoders to a file
-    with open('encoder.pkl', 'wb') as f:
-        pickle.dump(encoders, f)
-
-    return df
-
-# Ensure dataset is label encoded
-df = label_encode(df, columns_to_encode)
-
-# Function to preprocess user input
-def preprocess_input(user_input, encoders):
-    user_input_df = pd.DataFrame([user_input])
-    
-    # Apply the encoders to the relevant columns
-    for col in columns_to_encode:
-        if col in user_input_df:
-            user_input_df[col] = encoders[col].transform(user_input_df[col])
-    
-    return user_input_df
+# Create mappings between team names and encoded values
+home_team_mapping = get_encoded_values(Home_teams, encoders['HomeTeam'])
+away_team_mapping = get_encoded_values(Away_teams, encoders['AwayTeam'])
 
 # Main function to run the Streamlit app
 def main():
     st.title('Football Match Predictor')
 
-    # Load model and encoders
+    # Load model
     model = load_model()
-    encoders = load_encoders()
 
     # Sidebar
-
     st.sidebar.header('Match Details')
     st.sidebar.markdown('Enter the details of the match to predict the outcome:')
+
+    # Get user input from sidebar
     user_input = {}
+   
+    user_input['HomeTeam'] = st.sidebar.selectbox('Home Team', list(home_team_mapping.keys()))
+    user_input['AwayTeam'] = st.sidebar.selectbox('Away Team', list(away_team_mapping.keys()))
 
-    # Get user input
-
-    user_input['Date'] = st.sidebar.date_input('Date')
-    user_input['HomeTeam'] = st.sidebar.text_input('Home Team')
-    user_input['AwayTeam'] = st.sidebar.text_input('Away Team')
     
 
-                                            
-
     # Preprocess the input
-    input_data = preprocess_input(user_input, encoders)
+    def preprocess_input(user_input):
+        user_input_df = pd.DataFrame([user_input])
+
+        # Map the real team names to their encoded values
+        user_input_df['HomeTeam'] = home_team_mapping.get(user_input['HomeTeam'], None)
+        user_input_df['AwayTeam'] = away_team_mapping.get(user_input['AwayTeam'], None)
+
+        # Ensure that all columns are encoded as needed
+        # Example for 'Date' encoding (assuming it's already encoded if needed)
+        # user_input_df['Date'] = encoders['Date'].transform([user_input['Date']])[0]
+
+        return user_input_df
+
+    input_data = preprocess_input(user_input)
 
     # Predict button
     if st.button('Predict Outcome'):
-        # Perform prediction
-        prediction = model.predict(input_data)
-        st.write(f'Predicted result: {prediction[0]}')
+        if None in input_data.values:
+            st.write('Error: One or more team names are not recognized.')
+        else:
+            prediction = model.predict(input_data)
+            st.write(f'The predicted outcome is: {prediction[0]}')
 
 if __name__ == '__main__':
     main()
