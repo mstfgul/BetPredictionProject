@@ -45,7 +45,8 @@ add_bg_from_url()
 st.header("Input Match Details")
 
 # Input fields
-club_value = st.number_input("Club Value", min_value=0, max_value=1000000000, step=1000000)
+Home_club_value = st.number_input("Home Club Value", min_value=0, max_value=1000000000, step=1000000)
+Away_club_value = st.number_input("Away Club Value", min_value=0, max_value=1000000000, step=1000000)
 Away_Team = st.selectbox("Away Team", options=df['AwayTeam'].unique())
 Away_Shots_On_Target = st.number_input("Away Shots On Target", min_value=0, max_value=100, step=1)
 Home_Team = st.selectbox("Home Team", options=df['HomeTeam'].unique())
@@ -62,11 +63,10 @@ Away_Team_Last_10_Wins = st.number_input("Away Team Last 10 Wins", min_value=0, 
 # Calculate differences
 win_streak_difference = Home_Team_Wins_Streak - Away_Team_Wins_Streak
 loss_streak_difference = Home_Team_Losses_Streak - Away_Team_Losses_Streak
-club_value_difference = club_value  # This is currently the same as club_value, adjust if needed
+club_value_difference = Home_club_value  # This is currently the same as club_value, adjust if needed
 
 # Create the DataFrame with feature names and their corresponding values
 input_data = pd.DataFrame({
-    'club_value': [club_value],
     'AwayTeam': [Away_Team],
     'AwayShotsOnTarget': [Away_Shots_On_Target],
     'HomeTeam': [Home_Team],
@@ -81,7 +81,9 @@ input_data = pd.DataFrame({
     'HomeTeamLast10Goals': [Home_Goals],
     'AwayTeamLast10Goals': [Away_Goals],
     'HomeTeamLast10Wins': [Home_Team_Last_10_Wins],
-    'AwayTeamLast10Wins': [Away_Team_Last_10_Wins]  # Removed extra colon
+    'AwayTeamLast10Wins': [Away_Team_Last_10_Wins],
+    'HomeTeamClubValue': [Home_club_value],
+    'AwayTeamClubValue': [Away_club_value],
 })
 
 st.write(input_data)
