@@ -16,7 +16,7 @@ def load_model():
 
 # Function to load the LabelEncoder
 def load_encoder():
-    with open('label_encoder.pkl', 'rb') as f:
+    with open('label_encoders.pkl', 'rb') as f:
         encoder = pickle.load(f)
     return encoder
 
