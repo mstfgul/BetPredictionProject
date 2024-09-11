@@ -46,16 +46,18 @@ st.header("Input Match Details")
 
 # Input fields
 club_value = st.number_input("Club Value", min_value=0, max_value=1000000000, step=1000000)
-Away_Team = st.selectbox("Away Team", df['AwayTeam'].unique())
-Away_Goals = st.number_input("Away Goals past 10 games", min_value=0, max_value=10, step=1)
-Away_Shots_On_Target = st.number_input("Away Shots on Target past 10 games", min_value=0, max_value=30, step=1)
-Home_Team = st.selectbox("Home Team", df['HomeTeam'].unique())
-Home_Goals = st.number_input("Home Goals past 10 games", min_value=0, max_value=10, step=1)
-Home_Shots_On_Target = st.number_input("Home Shots on Target past 10 games", min_value=0, max_value=30, step=1)
-Home_Team_Wins_Streak = st.number_input("Home Team Wins Streak", min_value=0, max_value=10, step=1)
-Away_Team_Wins_Streak = st.number_input("Away Team Wins Streak", min_value=0, max_value=10, step=1)
-Home_Team_Losses_Streak = st.number_input("Home Team Losses Streak", min_value=0, max_value=10, step=1)
-Away_Team_Losses_Streak = st.number_input("Away Team Losses Streak", min_value=0, max_value=10, step=1)
+Away_Team = st.selectbox("Away Team", options=df['AwayTeam'].unique())
+Away_Shots_On_Target = st.number_input("Away Shots On Target", min_value=0, max_value=100, step=1)
+Home_Team = st.selectbox("Home Team", options=df['HomeTeam'].unique())
+Home_Shots_On_Target = st.number_input("Home Shots On Target", min_value=0, max_value=100, step=1)
+Home_Team_Wins_Streak = st.number_input("Home Team Win Streak", min_value=0, max_value=100, step=1)
+Away_Team_Wins_Streak = st.number_input("Away Team Win Streak", min_value=0, max_value=100, step=1)
+Home_Team_Losses_Streak = st.number_input("Home Team Loss Streak", min_value=0, max_value=100, step=1)
+Away_Team_Losses_Streak = st.number_input("Away Team Loss Streak", min_value=0, max_value=100, step=1)
+Home_Goals = st.number_input("Home Team Last 10 Goals", min_value=0, max_value=100, step=1)
+Away_Goals = st.number_input("Away Team Last 10 Goals", min_value=0, max_value=100, step=1)
+Home_Team_Last_10_Wins = st.number_input("Home Team Last 10 Wins", min_value=0, max_value=10, step=1)
+Away_Team_Last_10_Wins = st.number_input("Away Team Last 10 Wins", min_value=0, max_value=10, step=1)
 
 # Calculate differences
 win_streak_difference = Home_Team_Wins_Streak - Away_Team_Wins_Streak
@@ -78,27 +80,36 @@ input_data = pd.DataFrame({
     'club_value_difference': [club_value_difference],
     'HomeTeamLast10Goals': [Home_Goals],
     'AwayTeamLast10Goals': [Away_Goals],
-    'HomeTeamLast10Wins': [Home_Team_Wins_Streak],  # Adjust if needed
-    'AwayTeamLast10Wins': [Away_Team_Wins_Streak]   # Adjust if needed
+    'HomeTeamLast10Wins': [Home_Team_Last_10_Wins],
+    'AwayTeamLast10Wins': [Away_Team_Last_10_Wins]  # Removed extra colon
 })
 
 st.write(input_data)
 
 # Encode inputs using the LabelEncoder
-input_data['HomeTeam'] = label_encoder.transform(input_data['HomeTeam'])
-input_data['AwayTeam'] = label_encoder.transform(input_data['AwayTeam'])
-
-# Button to predict the match result
-if st.button("Predict Result"):
-    prediction = model.predict(input_data)
-    st.write(f"Predicted Value: {prediction[0]}")  # Debug line to check the prediction value
-    
-    result_map = {0: "Draw", 1: "Home Win", 2: "Away Win"}  # Ensure these keys match the model's output
-    
+def encode_team(team_name, encoder):
     try:
-        st.subheader(f"Prediction: {result_map[prediction[0]]}")
-    except KeyError as e:
-        st.error(f"Unexpected prediction value: {prediction[0]}. Error: {e}")
-        st.write(f"Result map keys: {result_map.keys()}")
+        return encoder.transform([team_name])[0]
+    except ValueError:
+        st.error(f"Unseen label: {team_name}. Please ensure the team names are correct.")
+        return -1  # Or handle it in another way
 
+input_data['HomeTeam'] = input_data['HomeTeam'].apply(lambda x: encode_team(x, label_encoder))
+input_data['AwayTeam'] = input_data['AwayTeam'].apply(lambda x: encode_team(x, label_encoder))
 
+# Check if encoding was successful
+if input_data['HomeTeam'].eq(-1).any() or input_data['AwayTeam'].eq(-1).any():
+    st.error("One or more team names were not recognized. Please check the input.")
+else:
+    # Button to predict the match result
+    if st.button("Predict Result"):
+        prediction = model.predict(input_data)
+        st.write(f"Predicted Value: {prediction[0]}")  # Debug line to check the prediction value
+        
+        result_map = {0: "Draw", 1: "Home Win", 2: "Away Win"}  # Ensure these keys match the model's output
+        
+        try:
+            st.subheader(f"Prediction: {result_map[prediction[0]]}")
+        except KeyError as e:
+            st.error(f"Unexpected prediction value: {prediction[0]}. Error: {e}")
+            st.write(f"Result map keys: {result_map.keys()}")
