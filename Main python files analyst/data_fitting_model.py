@@ -43,9 +43,9 @@ def create_features(df):
 
 # Function to encode categorical columns
 def encode_teams(df, path, filename):
-    all_teams = list(df['HomeTeam'].unique()) + list(df['AwayTeam'].unique())
+    columns_to_encode = ['HomeTeam','AwayTeam','club_value']
     encoder = LabelEncoder()
-    encoder.fit(all_teams)
+    encoder.fit(columns_to_encode)
 
     file_path = os.path.join(path, filename)
     with open(file_path, 'wb') as f:
@@ -61,7 +61,7 @@ def fill_missing_values(df):
     return df_imputed
 
 # Function to prepare final DataFrame
-def prepare_final_df(df, path='../Streamlit/', filename='le.pkl'):
+def prepare_final_df(df, path='./Streamlit/', filename='le.pkl'):
     # Step 1: Drop columns
     columns_to_drop = ['age', 'name', 'position', 'club', 'market']
     df = drop_columns(df, columns_to_drop)
@@ -81,7 +81,7 @@ def prepare_final_df(df, path='../Streamlit/', filename='le.pkl'):
 # Main execution
 if __name__ == "__main__":
     # Load dataset
-    df = load_data('../Preprocessing/combined_file.csv')
+    df = load_data('./Preprocessing/combined_file.csv')
 
     # Prepare final DataFrame
     final_df = prepare_final_df(df)

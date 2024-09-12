@@ -57,7 +57,7 @@ def save_model(model, path, model_name):
 # Main execution
 if __name__ == "__main__":
     # Load the imputed DataFrame
-    df_imputed_path = '../Preprocessing/df_imputed.pkl'
+    df_imputed_path = './Preprocessing/df_imputed.pkl'
     df_imputed = load_imputed_df(df_imputed_path)
     print(f"Imputed DataFrame loaded from {df_imputed_path}")
     
@@ -72,7 +72,7 @@ if __name__ == "__main__":
     target = 'FullTimeResult'
     
     # Load the saved encoder
-    encoder_path = '../Streamlit/le.pkl'
+    encoder_path = './Streamlit/le.pkl'
     encoder = load_encoder(encoder_path)
     
     # Encode categorical columns using the loaded encoder
@@ -110,6 +110,6 @@ if __name__ == "__main__":
     evaluate_model(y_test, y_pred)
     
     # Save the trained model
-    model_path = '../Streamlit/'
+    model_path = './Streamlit/'
     model_name = 'best_model'
     save_model(xgb_model, model_path, model_name)
