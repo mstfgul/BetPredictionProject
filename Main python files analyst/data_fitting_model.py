@@ -63,7 +63,7 @@ def fill_missing_values(df):
 # Function to prepare final DataFrame
 def prepare_final_df(df, path='./Streamlit/', filename='le.pkl'):
     # Step 1: Drop columns
-    columns_to_drop = ['age', 'name', 'position', 'club', 'market']
+    columns_to_drop = ['age', 'name', 'position','market']
     df = drop_columns(df, columns_to_drop)
 
     # Step 2: Create new features
