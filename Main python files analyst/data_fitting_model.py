@@ -1,88 +1,101 @@
+# Import libraries
 import numpy as np
 import pandas as pd
-import os
-import pickle
-from sklearn.preprocessing import LabelEncoder
-from sklearn.impute import KNNImputer
 
-# Function to load the dataset
-def load_data(file_path):
-    return pd.read_csv(file_path)
 
-# Function to drop unwanted columns
-def drop_columns(df, columns_to_drop):
-    return df.drop(columns=columns_to_drop, axis=1)
+# Load data
+df = pd.read_csv('../Preprocessing/masterupdateafter2000.csv')
 
-# Function to create new features
-def create_features(df):
-    # 1. Goal difference as a feature
-    df['goal_difference'] = df['HomeGoals'] - df['AwayGoals']
+# Full-time result analysis
+away_team_ftr = df[df['FTR'] == 'A']['AwayTeam'].value_counts()
+home_team_ftr = df[df['FTR'] == 'H']['HomeTeam'].value_counts()
 
-    # 4. Win streak difference (HomeTeamWinStreak - AwayTeamWinStreak)
-    df['win_streak_difference'] = df['HomeTeamWinStreak'] - df['AwayTeamWinStreak']
+# Goals scored
+goals_away = df.groupby('AwayTeam')['FTAG'].sum().sort_values(ascending=False)
+goals_home = df.groupby('HomeTeam')['FTHG'].sum().sort_values(ascending=False)
 
-    # 5. Loss streak difference (HomeTeamLossStreak - AwayTeamLossStreak)
-    df['loss_streak_difference'] = df['HomeTeamLossStreak'] - df['AwayTeamLossStreak']
+# Shots on target
+shots_on_target_away = df.groupby('AwayTeam')['AST'].sum().sort_values(ascending=False)
+shots_on_target_home = df.groupby('HomeTeam')['HST'].sum().sort_values(ascending=False)
 
-    # 6. Club value difference
-    df['club_value_difference'] = df['club_value']
+# Head-to-Head Records
+h2h_records = df.groupby(['HomeTeam', 'AwayTeam'])['FTR'].value_counts().unstack(fill_value=0)
 
-    # 7. Last 10 games goals for home and away
-    df['HomeTeamLast10Goals'] = df['HomeGoals'] - df['HomeGoals'].shift(10)
-    df['AwayTeamLast10Goals'] = df['AwayGoals'] - df['AwayGoals'].shift(10)
+# Calculate win streaks
+def win_streaks(df, team):
+    wins = df['FTR'][df['HomeTeam'] == team].apply(lambda x: 1 if x == 'H' else 0).values
+    streaks = []
+    streak = 0
+    for win in wins:
+        if win == 1:
+            streak += 1
+        else:
+            streaks.append(streak)
+            streak = 0
+    streaks.append(streak)
+    return max(streaks)
 
-    # 8. Last 10 games wins for home and away
-    df['HomeTeamLast10Wins'] = df['HomeTeamWinStreak'] - df['HomeTeamWinStreak'].shift(10)
-    df['AwayTeamLast10Wins'] = df['AwayTeamWinStreak'] - df['AwayTeamWinStreak'].shift(10)
+# Calculate win streaks for home and away teams
+df['HomeTeamWinStreak'] = df['HomeTeam'].apply(lambda x: win_streaks(df, x))
+df['AwayTeamWinStreak'] = df['AwayTeam'].apply(lambda x: win_streaks(df, x))
 
-    # 9. Club value for home and away
-    df['HomeTeamClubValue'] = df['club_value']
-    df['AwayTeamClubValue'] = df['club_value']
+# Calculate loss streaks
+def loss_streaks(df, team):
+    losses = df['FTR'][df['HomeTeam'] == team].apply(lambda x: 1 if x == 'A' else 0).values
+    streaks = []
+    streak = 0
+    for loss in losses:
+        if loss == 1:
+            streak += 1
+        else:
+            streaks.append(streak)
+            streak = 0
+    streaks.append(streak)
+    return max(streaks)
 
-    return df
+# Calculate loss streaks for home and away teams
+df['HomeTeamLossStreak'] = df['HomeTeam'].apply(lambda x: loss_streaks(df, x))
+df['AwayTeamLossStreak'] = df['AwayTeam'].apply(lambda x: loss_streaks(df, x))
 
-# Function to encode categorical columns
-def encode_teams(df, path, filename):
-    columns_to_encode = ['HomeTeam','AwayTeam','club_value']
-    encoder = LabelEncoder()
-    encoder.fit(columns_to_encode)
+# Create new DataFrame for model selection
+model_df = pd.DataFrame()
 
-    file_path = os.path.join(path, filename)
-    with open(file_path, 'wb') as f:
-        pickle.dump(encoder, f)
-    
-    print(f"Encoders saved to {file_path}")
-    return encoder
+# Add features for away and home teams
+model_df['AwayTeam'] = df['AwayTeam']
+model_df['AwayGoals'] = df['FTAG']
+model_df['AwayShotsOnTarget'] = df['AST']
+model_df['HomeTeam'] = df['HomeTeam']
+model_df['HomeGoals'] = df['FTHG']
+model_df['HomeShotsOnTarget'] = df['HST']
+model_df['FullTimeResult'] = df['FTR']
 
-# Function to fill missing values using KNNImputer
-def fill_missing_values(df):
-    imputer = KNNImputer(n_neighbors=50)
-    df_imputed = pd.DataFrame(imputer.fit_transform(df), columns=df.columns)
-    return df_imputed
+# Calculate win and loss streaks for each team
+def calculate_streaks(df, team, is_home=True):
+    results = df['FTR'][df['HomeTeam'] == team] if is_home else df['FTR'][df['AwayTeam'] == team]
+    streaks = []
+    streak = 0
+    for result in results:
+        if (is_home and result == 'H') or (not is_home and result == 'A'):
+            streak += 1
+        else:
+            if streak > 0:
+                streaks.append(streak)
+            streak = 0
+    if streak > 0:
+        streaks.append(streak)
+    return max(streaks) if streaks else 0
 
-# Function to prepare final DataFrame
-def prepare_final_df(df, path='./Streamlit/', filename='le.pkl'):
-    # Step 1: Drop columns
-    columns_to_drop = ['age', 'name', 'position','market']
-    df = drop_columns(df, columns_to_drop)
+# Pre-calculate streaks
+home_team_win_streaks = {team: calculate_streaks(df, team, is_home=True) for team in df['HomeTeam'].unique()}
+away_team_win_streaks = {team: calculate_streaks(df, team, is_home=False) for team in df['AwayTeam'].unique()}
+home_team_loss_streaks = {team: calculate_streaks(df, team, is_home=True) for team in df['HomeTeam'].unique()}
+away_team_loss_streaks = {team: calculate_streaks(df, team, is_home=False) for team in df['AwayTeam'].unique()}
 
-    # Step 2: Create new features
-    df = create_features(df)
+# Map streaks to the DataFrame
+model_df['HomeTeamWinStreak'] = df['HomeTeam'].map(home_team_win_streaks)
+model_df['AwayTeamWinStreak'] = df['AwayTeam'].map(away_team_win_streaks)
+model_df['HomeTeamLossStreak'] = df['HomeTeam'].map(home_team_loss_streaks)
+model_df['AwayTeamLossStreak'] = df['AwayTeam'].map(away_team_loss_streaks)
 
-    # Step 3: Encode categorical features
-    encode_teams(df, path, filename)
-
-    # Step 4: Fill missing values
-    df_imputed = fill_missing_values(df)
-
-    # Step 5: Return the final DataFrame
-    return df_imputed
-
-# Main execution
-if __name__ == "__main__":
-    # Load dataset
-    df = load_data('./Preprocessing/combined_file.csv')
-
-    # Prepare final DataFrame
-    final_df = prepare_final_df(df)
-    print(final_df.head())
+# Save to CSV
+model_df.to_csv('../Preprocessing/model_df.csv', index=False)
