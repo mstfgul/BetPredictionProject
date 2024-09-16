@@ -5,7 +5,7 @@ import pandas as pd
 #df = pd.read_csv()
 
 # Title of the app
-st.title("Team Information")
+st.title("Team Informations")
 
 # Add a background image using custom CSS
 def add_bg_from_url():
