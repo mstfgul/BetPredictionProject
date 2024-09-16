@@ -18,7 +18,8 @@ df['loss_streak_difference'] = df['HomeTeamLossStreak'] - df['AwayTeamLossStreak
 df['HomeTeamLast10Goals'] = df['HomeGoals'] - df['HomeGoals'].shift(10)
 df['AwayTeamLast10Goals'] = df['AwayGoals'] - df['AwayGoals'].shift(10)
 df['HomeTeamLast10Wins'] = df['HomeTeamWinStreak'] - df['HomeTeamWinStreak'].shift(10)
-df['AwayTeamLast10Wins'] = df['AwayTeamWinStreak'] - df['AwayTeamLast10Wins'].shift(10)
+df['AwayTeamLast10Wins'] = df['AwayTeamWinStreak'] - df['AwayTeamWinStreak'].shift(10)  # Fix the issue here
+
 
 # Encode categorical features
 columns = ['HomeTeam', 'AwayTeam', 'FullTimeResult']

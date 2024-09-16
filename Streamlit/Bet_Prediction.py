@@ -9,6 +9,8 @@ st.set_page_config(
 # Load dataset
 df = pd.read_csv('../Preprocessing/model_df.csv')
 
+
+
 # Title of the app
 st.title("Football Match Prediction 📈")
 
@@ -49,40 +51,51 @@ add_bg_from_url()
 st.header("Input Match Details 📋")
 
 # Select the Away and Home teams
-Away_Team = st.selectbox("Away Team 💪", options=df['AwayTeam'].unique())
-Home_Team = st.selectbox("Home Team 🏟️", options=df['HomeTeam'].unique())
+Away_Team = st.selectbox("Away Team 💪", options=df['AwayTeam'])
+Home_Team = st.selectbox("Home Team 🏟️", options=df['HomeTeam'])
 
-# Function to retrieve team stats
+# Function to retrieve team stats from the dataset
 def get_team_stats(team, df, team_type='Home'):
-    """Extract team stats for the selected team"""
+    """Extract stats for the selected team from the dataset"""
     stats = {}
     if team_type == 'Home':
-        stats['HomeGoals'] = df[df['HomeTeam'] == team]['HomeGoals'].mean()
         stats['HomeShotsOnTarget'] = df[df['HomeTeam'] == team]['HomeShotsOnTarget'].mean()
         stats['HomeTeamWinStreak'] = df[df['HomeTeam'] == team]['HomeTeamWinStreak'].mean()
         stats['HomeTeamLossStreak'] = df[df['HomeTeam'] == team]['HomeTeamLossStreak'].mean()
+        stats['HomeTeamLast10Goals'] = df[df['HomeTeam'] == team].get('HomeTeamLast10Goals', pd.Series([0])).mean()
+        stats['HomeTeamLast10Wins'] = df[df['HomeTeam'] == team].get('HomeTeamLast10Wins', pd.Series([0])).mean()
     else:
-        stats['AwayGoals'] = df[df['AwayTeam'] == team]['AwayGoals'].mean()
         stats['AwayShotsOnTarget'] = df[df['AwayTeam'] == team]['AwayShotsOnTarget'].mean()
         stats['AwayTeamWinStreak'] = df[df['AwayTeam'] == team]['AwayTeamWinStreak'].mean()
         stats['AwayTeamLossStreak'] = df[df['AwayTeam'] == team]['AwayTeamLossStreak'].mean()
+        stats['AwayTeamLast10Goals'] = df[df['AwayTeam'] == team].get('AwayTeamLast10Goals', pd.Series([0])).mean()
+        stats['AwayTeamLast10Wins'] = df[df['AwayTeam'] == team].get('AwayTeamLast10Wins', pd.Series([0])).mean()
     return stats
 
 # Automatically retrieve the statistics for both teams
 home_stats = get_team_stats(Home_Team, df, team_type='Home')
 away_stats = get_team_stats(Away_Team, df, team_type='Away')
 
-# Create the DataFrame for prediction
+# Calculate win and loss streak differences
+win_streak_difference = home_stats['HomeTeamWinStreak'] - away_stats['AwayTeamWinStreak']
+loss_streak_difference = home_stats['HomeTeamLossStreak'] - away_stats['AwayTeamLossStreak']
+
+# Create the DataFrame for prediction with all required features
 input_data = pd.DataFrame({
-    'AwayGoals': [away_stats['AwayGoals']],
+    'AwayTeam': [Away_Team],
     'AwayShotsOnTarget': [away_stats['AwayShotsOnTarget']],
     'HomeTeam': [Home_Team],
-    'HomeGoals': [home_stats['HomeGoals']],
     'HomeShotsOnTarget': [home_stats['HomeShotsOnTarget']],
     'HomeTeamWinStreak': [home_stats['HomeTeamWinStreak']],
     'AwayTeamWinStreak': [away_stats['AwayTeamWinStreak']],
     'HomeTeamLossStreak': [home_stats['HomeTeamLossStreak']],
-    'AwayTeamLossStreak': [away_stats['AwayTeamLossStreak']]
+    'AwayTeamLossStreak': [away_stats['AwayTeamLossStreak']],
+    'win_streak_difference': [win_streak_difference],
+    'loss_streak_difference': [loss_streak_difference],
+    'HomeTeamLast10Goals': [home_stats['HomeTeamLast10Goals']],
+    'AwayTeamLast10Goals': [away_stats['AwayTeamLast10Goals']],
+    'HomeTeamLast10Wins': [home_stats['HomeTeamLast10Wins']],
+    'AwayTeamLast10Wins': [away_stats['AwayTeamLast10Wins']]
 })
 
 st.write("Input Data 📝:", input_data)
@@ -93,7 +106,7 @@ def encode_team(team_name, encoder):
         return encoder.transform([team_name])[0]
     except ValueError:
         st.error(f"Unseen label: {team_name}. Please ensure the team names are correct.")
-        return -1  # Or handle it in another way
+        return -1  # Handle the error in another way if needed
 
 # Encode the team names
 input_data['HomeTeam'] = encode_team(Home_Team, label_encoder)
@@ -108,7 +121,8 @@ else:
         prediction = model.predict(input_data)
         st.write(f"Predicted Value: {prediction[0]}")  # Debug line to check the prediction value
         
-        result_map = {0: "Draw", 1: "Home Win", 2: "Away Win"}  # Ensure these keys match the model's output
+        # Result map matching the model output
+        result_map = {0: "Draw", 1: "Home Win", 2: "Away Win"}
         
         try:
             st.subheader(f"Prediction: {result_map[prediction[0]]}")
