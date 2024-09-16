@@ -2,6 +2,10 @@ import streamlit as st
 import pandas as pd
 from st_aggrid import AgGrid, GridOptionsBuilder
 
+st.set_page_config(
+    page_title="Team Informations",
+    page_icon="⚽",)
+
 # Load dataset
 df = pd.read_csv('../Preprocessing/playerswithclub.csv')
 
@@ -25,10 +29,10 @@ def add_bg_from_url():
 # Call the function to apply the background
 add_bg_from_url()
 
-st.header("Select a team to view information")
+st.header("Select a team to view information 👥⚽")
 
 # Create a dropdown menu to select a team
-team = st.selectbox('Select a team', df['club'].unique())
+team = st.selectbox('Select a team 🎯', df['club'].unique())
 
 # Filter the dataset to display the selected team's information
 team_info = df[df['club'] == team]

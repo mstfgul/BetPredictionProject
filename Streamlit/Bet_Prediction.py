@@ -2,11 +2,15 @@ import streamlit as st
 import pandas as pd
 import pickle
 
+st.set_page_config(
+    page_title="Football Match Prediction",
+    page_icon="📊",)
+
 # Load dataset
 df = pd.read_csv('../Preprocessing/model_df.csv')
 
 # Title of the app
-st.title("Football Match Prediction")
+st.title("Football Match Prediction 📈")
 
 # Function to load the model
 def load_model():
@@ -42,11 +46,11 @@ def add_bg_from_url():
 add_bg_from_url()
 
 # User Input Section
-st.header("Input Match Details")
+st.header("Input Match Details 📋")
 
 # Select the Away and Home teams
-Away_Team = st.selectbox("Away Team", options=df['AwayTeam'].unique())
-Home_Team = st.selectbox("Home Team", options=df['HomeTeam'].unique())
+Away_Team = st.selectbox("Away Team 💪", options=df['AwayTeam'].unique())
+Home_Team = st.selectbox("Home Team 🏟️", options=df['HomeTeam'].unique())
 
 # Function to retrieve team stats
 def get_team_stats(team, df, team_type='Home'):
@@ -81,7 +85,7 @@ input_data = pd.DataFrame({
     'AwayTeamLossStreak': [away_stats['AwayTeamLossStreak']]
 })
 
-st.write("Input Data:", input_data)
+st.write("Input Data 📝:", input_data)
 
 # Encode inputs using the LabelEncoder
 def encode_team(team_name, encoder):
