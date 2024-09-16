@@ -1,8 +1,9 @@
 import streamlit as st
 import pandas as pd
+from st_aggrid import AgGrid, GridOptionsBuilder
 
 # Load dataset
-#df = pd.read_csv()
+df = pd.read_csv('../Preprocessing/playerswithclub.csv')
 
 # Title of the app
 st.title("Team Informations")
@@ -21,13 +22,27 @@ def add_bg_from_url():
         unsafe_allow_html=True
     )
 
-
 # Call the function to apply the background
 add_bg_from_url()
-
 
 st.header("Select a team to view information")
 
 # Create a dropdown menu to select a team
+team = st.selectbox('Select a team', df['club'].unique())
 
-team = st.selectbox('Select a team', ['Barcelona', 'Real Madrid', 'Manchester United', 'Liverpool', 'Bayern Munich'])
+# Filter the dataset to display the selected team's information
+team_info = df[df['club'] == team]
+
+# Display the team information using AgGrid for an interactive table
+def display_team_info(team_data):
+    # Create a GridOptionsBuilder for customization
+    gb = GridOptionsBuilder.from_dataframe(team_data)
+    gb.configure_pagination(paginationAutoPageSize=True)  # Enable pagination
+    gb.configure_side_bar()  # Enable a sidebar with filters
+    gridOptions = gb.build()
+    
+    # Use AgGrid to display the DataFrame with custom options
+    AgGrid(team_data, gridOptions=gridOptions, enable_enterprise_modules=True)
+
+# Call the function to display the filtered team information
+display_team_info(team_info)
