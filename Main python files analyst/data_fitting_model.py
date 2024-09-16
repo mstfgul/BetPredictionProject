@@ -1,10 +1,11 @@
 # Import libraries
 import numpy as np
 import pandas as pd
+import pandas as pd
 
 
 # Load data
-df = pd.read_csv('../Preprocessing/masterupdateafter2000.csv')
+df = pd.read_csv('./Preprocessing/masterupdateafter2000.csv')
 
 # Full-time result analysis
 away_team_ftr = df[df['FTR'] == 'A']['AwayTeam'].value_counts()
@@ -98,4 +99,4 @@ model_df['HomeTeamLossStreak'] = df['HomeTeam'].map(home_team_loss_streaks)
 model_df['AwayTeamLossStreak'] = df['AwayTeam'].map(away_team_loss_streaks)
 
 # Save to CSV
-model_df.to_csv('../Preprocessing/model_df.csv', index=False)
+model_df.to_csv('./Preprocessing/model_df.csv', index=False)

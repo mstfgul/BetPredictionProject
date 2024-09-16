@@ -10,7 +10,7 @@ import os
 import pickle
 
 # Load the data
-df = pd.read_csv('../Preprocessing/model_df.csv')
+df = pd.read_csv('./Preprocessing/model_df.csv')
 
 # Feature engineering
 df['win_streak_difference'] = df['HomeTeamWinStreak'] - df['AwayTeamWinStreak']
@@ -72,7 +72,7 @@ print("Logistic Regression Model Performance Report with Best Parameters:")
 print(classification_report(y_test, y_pred))
 
 # Save the best model to file
-path = '../Streamlit/'
+path = './Streamlit/'
 filename_model = 'model.pkl'
 file_path_model = os.path.join(path, filename_model)
 

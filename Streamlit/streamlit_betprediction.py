@@ -76,7 +76,6 @@ input_data = pd.DataFrame({
     'AwayTeamLossStreak': [Away_Team_Losses_Streak],
     'win_streak_difference': [win_streak_difference],
     'loss_streak_difference': [loss_streak_difference],
-    'club_value_difference': [club_value_difference],
     'HomeTeamLast10Goals': [Home_Goals],
     'AwayTeamLast10Goals': [Away_Goals],
     'HomeTeamLast10Wins': [Home_Team_Last_10_Wins],
