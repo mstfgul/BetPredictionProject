@@ -52,11 +52,16 @@ Home_Team = st.selectbox("Home Team", options=df['HomeTeam'].unique())
 def get_team_stats(team, df, team_type='Home'):
     """Extract team stats for the selected team"""
     stats = {}
-    stats[f'{team_type}ShotsOnTarget'] = df[df[f'{team_type}Team'] == team]['ShotsOnTarget'].mean()
-    stats[f'{team_type}WinStreak'] = df[df[f'{team_type}Team'] == team]['WinStreak'].mean()
-    stats[f'{team_type}LossStreak'] = df[df[f'{team_type}Team'] == team]['LossStreak'].mean()
-    stats[f'{team_type}Last10Goals'] = df[df[f'{team_type}Team'] == team]['Last10Goals'].mean()
-    stats[f'{team_type}Last10Wins'] = df[df[f'{team_type}Team'] == team]['Last10Wins'].mean()
+    if team_type == 'Home':
+        stats['HomeGoals'] = df[df['HomeTeam'] == team]['HomeGoals'].mean()
+        stats['HomeShotsOnTarget'] = df[df['HomeTeam'] == team]['HomeShotsOnTarget'].mean()
+        stats['HomeTeamWinStreak'] = df[df['HomeTeam'] == team]['HomeTeamWinStreak'].mean()
+        stats['HomeTeamLossStreak'] = df[df['HomeTeam'] == team]['HomeTeamLossStreak'].mean()
+    else:
+        stats['AwayGoals'] = df[df['AwayTeam'] == team]['AwayGoals'].mean()
+        stats['AwayShotsOnTarget'] = df[df['AwayTeam'] == team]['AwayShotsOnTarget'].mean()
+        stats['AwayTeamWinStreak'] = df[df['AwayTeam'] == team]['AwayTeamWinStreak'].mean()
+        stats['AwayTeamLossStreak'] = df[df['AwayTeam'] == team]['AwayTeamLossStreak'].mean()
     return stats
 
 # Automatically retrieve the statistics for both teams
@@ -65,19 +70,15 @@ away_stats = get_team_stats(Away_Team, df, team_type='Away')
 
 # Create the DataFrame for prediction
 input_data = pd.DataFrame({
-    'AwayTeam': [Away_Team],
+    'AwayGoals': [away_stats['AwayGoals']],
+    'AwayShotsOnTarget': [away_stats['AwayShotsOnTarget']],
     'HomeTeam': [Home_Team],
+    'HomeGoals': [home_stats['HomeGoals']],
     'HomeShotsOnTarget': [home_stats['HomeShotsOnTarget']],
-    'HomeTeamWinStreak': [home_stats['HomeWinStreak']],
-    'AwayTeamWinStreak': [away_stats['AwayWinStreak']],
-    'HomeTeamLossStreak': [home_stats['HomeLossStreak']],
-    'AwayTeamLossStreak': [away_stats['AwayLossStreak']],
-    'win_streak_difference': [home_stats['HomeWinStreak'] - away_stats['AwayWinStreak']],
-    'loss_streak_difference': [home_stats['HomeLossStreak'] - away_stats['AwayLossStreak']],
-    'HomeTeamLast10Goals': [home_stats['HomeLast10Goals']],
-    'AwayTeamLast10Goals': [away_stats['AwayLast10Goals']],
-    'HomeTeamLast10Wins': [home_stats['HomeLast10Wins']],
-    'AwayTeamLast10Wins': [away_stats['AwayLast10Wins']],
+    'HomeTeamWinStreak': [home_stats['HomeTeamWinStreak']],
+    'AwayTeamWinStreak': [away_stats['AwayTeamWinStreak']],
+    'HomeTeamLossStreak': [home_stats['HomeTeamLossStreak']],
+    'AwayTeamLossStreak': [away_stats['AwayTeamLossStreak']]
 })
 
 st.write("Input Data:", input_data)
