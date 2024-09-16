@@ -1,19 +1,29 @@
+# Impport the necessary libraries
 import pandas as pd
 import numpy as np
 import csv
 import datetime
+import os
 
-import sqlite3
+# This library allows us to connect to a PostgreSQL database
+import psycopg2
 
-con = sqlite3.connect("database/db/football.db")
-cur = con.cursor()
+# The external url of the database
+db_url = "postgresql://admin:JVDdki5JwDKlAtHsFAdxL58tO9qQZh5j@dpg-crhvmi5umphs73cag3i0-a.frankfurt-postgres.render.com/football_p8l0"
 
+# Connect to the database
+conn = psycopg2.connect(db_url)
+
+cur = conn.cursor()
+
+# Create the table countries
 cur.execute("""
             CREATE TABLE countries(
                 id integer PRIMARY KEY,
                 name varchar);
             """)
 
+# Create the table leagues
 cur.execute("""
             CREATE TABLE leagues(
                 id integer PRIMARY KEY,
@@ -22,17 +32,21 @@ cur.execute("""
                 FOREIGN KEY (country_id) REFERENCES countries (id));
             """)
 
+conn.commit()
+
+# The list of countries
 countries_list = tuple(enumerate(
-    sorted(("England", "Germany", "Italy", "Spain",
-           "France", "Belgium", "Netherlands")),
+    sorted(("England", "Germany", "Italy", "Spain", "France", "Belgium", "Netherlands")),
     start=1))
 
+# Insert the countries into the table
 cur.executemany("""
             INSERT INTO countries
-            VALUES(?, ?)
+            VALUES(%s, %s)
             """, countries_list)
-con.commit()
+conn.commit()
 
+# Create a dictionnary with the leagues of each country
 leagues_dictionnary = {"England": ["Premier League", "Championship"],
                        "Germany": ["Bundesliga 1", "Bundesliga 2"],
                        "Italy": ["Serie A", "Serie B"],
@@ -41,6 +55,7 @@ leagues_dictionnary = {"England": ["Premier League", "Championship"],
                        "Belgium": ["Jupiler League"],
                        "Netherlands": ["Eredivisie"]}
 
+# Create the list of leagues
 country_league_list = []
 for i, country in countries_list:
     for league in leagues_dictionnary[country]:
@@ -48,13 +63,15 @@ for i, country in countries_list:
 
 leagues_list = tuple((i, *item) for i, item in enumerate(country_league_list, start=1))
 
+# Insert the leagues into the table
 cur.executemany("""
             INSERT INTO leagues
-            VALUES(?, ?, ?)
+            VALUES(%s, %s, %s)
             """, leagues_list)
-con.commit()
 
+conn.commit()
 
+# Create the table teams
 cur.execute("""
             CREATE TABLE teams(
                 id integer PRIMARY KEY,
@@ -62,6 +79,10 @@ cur.execute("""
                 name varchar,
                 FOREIGN KEY (country_id) REFERENCES countries (id));
             """)
+
+conn.commit()
+
+# A list of urls to download the data
 urls = [
     "https://www.football-data.co.uk/mmz4281/1011/B1.csv",
     "https://www.football-data.co.uk/mmz4281/1112/B1.csv",
@@ -80,24 +101,23 @@ urls = [
     "https://www.football-data.co.uk/mmz4281/2425/B1.csv"
 ]
 
-
+# Create the list of all the teams
 teams_set = set()
 
 for url in urls:
     df = pd.read_csv(url)
     teams_set = teams_set.union(set(df["HomeTeam"].dropna().unique()))
 
-teams_list = tuple((i, 1, value)
-                   for i, value in enumerate(sorted(list(teams_set)), start=1))
+teams_list = tuple((i, 1, value) for i, value in enumerate(sorted(list(teams_set)), start=1))
 
-
+# Insert the teams into the table
 cur.executemany("""
             INSERT INTO teams
-            VALUES(?, ?, ?)
+            VALUES(%s, %s, %s)
             """, teams_list)
-con.commit()
+conn.commit()
 
-
+# Create the table matches
 cur.execute("""
             CREATE TABLE matchs(
                 id integer PRIMARY KEY,
@@ -118,8 +138,16 @@ cur.execute("""
                 FOREIGN KEY (country_id) REFERENCES countries (id),
                 FOREIGN KEY (league_id) REFERENCES leagues (id),
                 FOREIGN KEY (home_team_id) REFERENCES teams (id),
-                FOREIGN KEY (away_team_id) REFERENCES teams (id))
+                FOREIGN KEY (away_team_id) REFERENCES teams (id));
             """)
+
+conn.commit()
+
+# Create a csv file with the all the matches data
+try:
+    os.remove("database/csv_files/matchs.csv")
+except:
+    pass
 
 teams_dict = {team: i for i, j, team in teams_list}
 
@@ -142,7 +170,7 @@ for url in urls:
 
     df['Date'] = pd.to_datetime(df["Date"], format='mixed').dt.date
 
-    df.to_csv("database/csv_files/matchs.csv", sep=',', header=False, index=False, mode='a',
+    df.to_csv("csv_files/matchs.csv", sep=',', header=False, index=False, mode='a',
               columns=["country_id",
                        "league_id",
                        "Div",
@@ -158,11 +186,17 @@ for url in urls:
                        "HTAG",
                        "HTR"])
 
-
+# Insert the matches into the table
 with open("database/csv_files/matchs.csv") as file:
     matchs_info = csv.reader(file)
+    matchs_info = [
+        tuple(None if field == ''
+              else int(float(field)) if field.replace('.', '', 1).isdigit()
+              else field for field in row) for row in matchs_info]
+    matchs_info = [(i+1, *row) for i, row in enumerate(matchs_info)]
     cur.executemany("""
-                    INSERT INTO matchs (country_id,
+                    INSERT INTO matchs (id,
+                                        country_id,
                                         league_id,
                                         division,
                                         season,
@@ -176,9 +210,10 @@ with open("database/csv_files/matchs.csv") as file:
                                         ht_home_team_goals,
                                         ht_away_team_goals,
                                         ht_result)
-                    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
                     """, matchs_info)
-    con.commit()
+    conn.commit()
 
-
-con.close()
+# Close the connection to the database
+cur.close()
+conn.close()
