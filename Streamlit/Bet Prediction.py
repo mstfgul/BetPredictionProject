@@ -22,7 +22,7 @@ def load_encoder():
 
 # Load the model and encoders
 model = load_model()
-label_encoder = load_encoder()  # Ensure this is a LabelEncoder object
+label_encoder = load_encoder()
 
 # Add a background image using custom CSS
 def add_bg_from_url():
@@ -44,46 +44,43 @@ add_bg_from_url()
 # User Input Section
 st.header("Input Match Details")
 
-# Input fields
-
+# Select the Away and Home teams
 Away_Team = st.selectbox("Away Team", options=df['AwayTeam'].unique())
-Away_Shots_On_Target = st.number_input("Away Shots On Target", min_value=0, max_value=100, step=1)
 Home_Team = st.selectbox("Home Team", options=df['HomeTeam'].unique())
-Home_Shots_On_Target = st.number_input("Home Shots On Target", min_value=0, max_value=100, step=1)
-Home_Team_Wins_Streak = st.number_input("Home Team Win Streak", min_value=0, max_value=100, step=1)
-Away_Team_Wins_Streak = st.number_input("Away Team Win Streak", min_value=0, max_value=100, step=1)
-Home_Team_Losses_Streak = st.number_input("Home Team Loss Streak", min_value=0, max_value=100, step=1)
-Away_Team_Losses_Streak = st.number_input("Away Team Loss Streak", min_value=0, max_value=100, step=1)
-Home_Goals = st.number_input("Home Team Last 10 Goals", min_value=0, max_value=100, step=1)
-Away_Goals = st.number_input("Away Team Last 10 Goals", min_value=0, max_value=100, step=1)
-Home_Team_Last_10_Wins = st.number_input("Home Team Last 10 Wins", min_value=0, max_value=10, step=1)
-Away_Team_Last_10_Wins = st.number_input("Away Team Last 10 Wins", min_value=0, max_value=10, step=1)
 
-# Calculate differences
-win_streak_difference = Home_Team_Wins_Streak - Away_Team_Wins_Streak
-loss_streak_difference = Home_Team_Losses_Streak - Away_Team_Losses_Streak
+# Function to retrieve team stats
+def get_team_stats(team, df, team_type='Home'):
+    """Extract team stats for the selected team"""
+    stats = {}
+    stats[f'{team_type}ShotsOnTarget'] = df[df[f'{team_type}Team'] == team]['ShotsOnTarget'].mean()
+    stats[f'{team_type}WinStreak'] = df[df[f'{team_type}Team'] == team]['WinStreak'].mean()
+    stats[f'{team_type}LossStreak'] = df[df[f'{team_type}Team'] == team]['LossStreak'].mean()
+    stats[f'{team_type}Last10Goals'] = df[df[f'{team_type}Team'] == team]['Last10Goals'].mean()
+    stats[f'{team_type}Last10Wins'] = df[df[f'{team_type}Team'] == team]['Last10Wins'].mean()
+    return stats
 
+# Automatically retrieve the statistics for both teams
+home_stats = get_team_stats(Home_Team, df, team_type='Home')
+away_stats = get_team_stats(Away_Team, df, team_type='Away')
 
-# Create the DataFrame with feature names and their corresponding values
+# Create the DataFrame for prediction
 input_data = pd.DataFrame({
     'AwayTeam': [Away_Team],
-    'AwayShotsOnTarget': [Away_Shots_On_Target],
     'HomeTeam': [Home_Team],
-    'HomeShotsOnTarget': [Home_Shots_On_Target],
-    'HomeTeamWinStreak': [Home_Team_Wins_Streak],
-    'AwayTeamWinStreak': [Away_Team_Wins_Streak],
-    'HomeTeamLossStreak': [Home_Team_Losses_Streak],
-    'AwayTeamLossStreak': [Away_Team_Losses_Streak],
-    'win_streak_difference': [win_streak_difference],
-    'loss_streak_difference': [loss_streak_difference],
-    'HomeTeamLast10Goals': [Home_Goals],
-    'AwayTeamLast10Goals': [Away_Goals],
-    'HomeTeamLast10Wins': [Home_Team_Last_10_Wins],
-    'AwayTeamLast10Wins': [Away_Team_Last_10_Wins],
-    
+    'HomeShotsOnTarget': [home_stats['HomeShotsOnTarget']],
+    'HomeTeamWinStreak': [home_stats['HomeWinStreak']],
+    'AwayTeamWinStreak': [away_stats['AwayWinStreak']],
+    'HomeTeamLossStreak': [home_stats['HomeLossStreak']],
+    'AwayTeamLossStreak': [away_stats['AwayLossStreak']],
+    'win_streak_difference': [home_stats['HomeWinStreak'] - away_stats['AwayWinStreak']],
+    'loss_streak_difference': [home_stats['HomeLossStreak'] - away_stats['AwayLossStreak']],
+    'HomeTeamLast10Goals': [home_stats['HomeLast10Goals']],
+    'AwayTeamLast10Goals': [away_stats['AwayLast10Goals']],
+    'HomeTeamLast10Wins': [home_stats['HomeLast10Wins']],
+    'AwayTeamLast10Wins': [away_stats['AwayLast10Wins']],
 })
 
-st.write(input_data)
+st.write("Input Data:", input_data)
 
 # Encode inputs using the LabelEncoder
 def encode_team(team_name, encoder):
@@ -93,11 +90,12 @@ def encode_team(team_name, encoder):
         st.error(f"Unseen label: {team_name}. Please ensure the team names are correct.")
         return -1  # Or handle it in another way
 
-input_data['HomeTeam'] = input_data['HomeTeam'].apply(lambda x: encode_team(x, label_encoder))
-input_data['AwayTeam'] = input_data['AwayTeam'].apply(lambda x: encode_team(x, label_encoder))
+# Encode the team names
+input_data['HomeTeam'] = encode_team(Home_Team, label_encoder)
+input_data['AwayTeam'] = encode_team(Away_Team, label_encoder)
 
 # Check if encoding was successful
-if input_data['HomeTeam'].eq(-1).any() or input_data['AwayTeam'].eq(-1).any():
+if input_data['HomeTeam'] == -1 or input_data['AwayTeam'] == -1:
     st.error("One or more team names were not recognized. Please check the input.")
 else:
     # Button to predict the match result
