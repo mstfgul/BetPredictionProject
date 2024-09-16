@@ -1,32 +1,41 @@
 import streamlit as st
 import pandas as pd
+import psycopg2
+import pandas.io.sql as sqlio
 import pickle
 
 st.set_page_config(
     page_title="Football Match Prediction",
     page_icon="📊",)
 
-# Load dataset
-df = pd.read_csv('../Preprocessing/model_df.csv')
-
-
+# Connect to the PostgreSQL database and load the dataset
+db_url = "postgresql://admin:JVDdki5JwDKlAtHsFAdxL58tO9qQZh5j@dpg-crhvmi5umphs73cag3i0-a.frankfurt-postgres.render.com/football_p8l0"
+conn = psycopg2.connect(db_url)
+query = """
+        SELECT name AS team, home_shots_on_target, away_shots_on_target, home_wins_streak, 
+               away_wins_streak, home_losses_streak, away_losses_streak, home_goals, 
+               away_goals, last_10_home_wins, last_10_away_wins
+        FROM season_teams;
+"""
+teams_statistics = sqlio.read_sql_query(query, conn)
+conn.close()
 
 # Title of the app
 st.title("Football Match Prediction 📈")
 
 # Function to load the model
 def load_model():
-    with open('model.pkl', 'rb') as f:
+    with open(r'C:\Users\pieta\OneDrive\Bureau\Becode\bootcamp\Repositories\BetPrediction\BetPredictionProject\Streamlit\model.pkl', 'rb') as f:
         model = pickle.load(f)
     return model
 
 # Function to load the LabelEncoder
 def load_encoder():
-    with open('le.pkl', 'rb') as f:
+    with open(r'C:\Users\pieta\OneDrive\Bureau\Becode\bootcamp\Repositories\BetPrediction\BetPredictionProject\Streamlit\le.pkl', 'rb') as f:
         encoder = pickle.load(f)
     return encoder
 
-# Load the model and encoders
+# Load the model and encoder
 model = load_model()
 label_encoder = load_encoder()
 
@@ -51,30 +60,31 @@ add_bg_from_url()
 st.header("Input Match Details 📋")
 
 # Select the Away and Home teams
-Away_Team = st.selectbox("Away Team 💪", options=df['AwayTeam'])
-Home_Team = st.selectbox("Home Team 🏟️", options=df['HomeTeam'])
+Away_Team = st.selectbox("Away Team 💪", options=teams_statistics['team'].unique())
+Home_Team = st.selectbox("Home Team 🏟️", options=teams_statistics['team'].unique())
 
 # Function to retrieve team stats from the dataset
 def get_team_stats(team, df, team_type='Home'):
     """Extract stats for the selected team from the dataset"""
     stats = {}
+    team_stats = df[df['team'] == team]
     if team_type == 'Home':
-        stats['HomeShotsOnTarget'] = df[df['HomeTeam'] == team]['HomeShotsOnTarget'].mean()
-        stats['HomeTeamWinStreak'] = df[df['HomeTeam'] == team]['HomeTeamWinStreak'].mean()
-        stats['HomeTeamLossStreak'] = df[df['HomeTeam'] == team]['HomeTeamLossStreak'].mean()
-        stats['HomeTeamLast10Goals'] = df[df['HomeTeam'] == team].get('HomeTeamLast10Goals', pd.Series([0])).mean()
-        stats['HomeTeamLast10Wins'] = df[df['HomeTeam'] == team].get('HomeTeamLast10Wins', pd.Series([0])).mean()
+        stats['HomeShotsOnTarget'] = team_stats['home_shots_on_target'].mean()
+        stats['HomeTeamWinStreak'] = team_stats['home_wins_streak'].mean()
+        stats['HomeTeamLossStreak'] = team_stats['home_losses_streak'].mean()
+        stats['HomeTeamLast10Goals'] = team_stats['home_goals'].mean()
+        stats['HomeTeamLast10Wins'] = team_stats['last_10_home_wins'].mean()
     else:
-        stats['AwayShotsOnTarget'] = df[df['AwayTeam'] == team]['AwayShotsOnTarget'].mean()
-        stats['AwayTeamWinStreak'] = df[df['AwayTeam'] == team]['AwayTeamWinStreak'].mean()
-        stats['AwayTeamLossStreak'] = df[df['AwayTeam'] == team]['AwayTeamLossStreak'].mean()
-        stats['AwayTeamLast10Goals'] = df[df['AwayTeam'] == team].get('AwayTeamLast10Goals', pd.Series([0])).mean()
-        stats['AwayTeamLast10Wins'] = df[df['AwayTeam'] == team].get('AwayTeamLast10Wins', pd.Series([0])).mean()
+        stats['AwayShotsOnTarget'] = team_stats['away_shots_on_target'].mean()
+        stats['AwayTeamWinStreak'] = team_stats['away_wins_streak'].mean()
+        stats['AwayTeamLossStreak'] = team_stats['away_losses_streak'].mean()
+        stats['AwayTeamLast10Goals'] = team_stats['away_goals'].mean()
+        stats['AwayTeamLast10Wins'] = team_stats['last_10_away_wins'].mean()
     return stats
 
 # Automatically retrieve the statistics for both teams
-home_stats = get_team_stats(Home_Team, df, team_type='Home')
-away_stats = get_team_stats(Away_Team, df, team_type='Away')
+home_stats = get_team_stats(Home_Team, teams_statistics, team_type='Home')
+away_stats = get_team_stats(Away_Team, teams_statistics, team_type='Away')
 
 # Calculate win and loss streak differences
 win_streak_difference = home_stats['HomeTeamWinStreak'] - away_stats['AwayTeamWinStreak']
@@ -103,7 +113,7 @@ st.write("Input Data 📝:", input_data)
 # Encode inputs using the LabelEncoder
 def encode_team(team_name, encoder):
     try:
-        return encoder.transform([team_name])[0]
+        return encoder.fit_transform([team_name])[0]
     except ValueError:
         st.error(f"Unseen label: {team_name}. Please ensure the team names are correct.")
         return -1  # Handle the error in another way if needed
@@ -112,20 +122,17 @@ def encode_team(team_name, encoder):
 input_data['HomeTeam'] = encode_team(Home_Team, label_encoder)
 input_data['AwayTeam'] = encode_team(Away_Team, label_encoder)
 
-# Check if encoding was successful
-if input_data['HomeTeam'] == -1 or input_data['AwayTeam'] == -1:
-    st.error("One or more team names were not recognized. Please check the input.")
-else:
-    # Button to predict the match result
-    if st.button("Predict Result"):
-        prediction = model.predict(input_data)
-        st.write(f"Predicted Value: {prediction[0]}")  # Debug line to check the prediction value
+
+# Button to predict the match result
+if st.button("Predict Result"):
+    prediction = model.predict(input_data)
+    st.write(f"Predicted Value: {prediction[0]}")  # Debug line to check the prediction value
         
-        # Result map matching the model output
-        result_map = {0: "Draw", 1: "Home Win", 2: "Away Win"}
+    # Result map matching the model output
+    result_map = {0: "Draw", 1: "Home Win", 2: "Away Win"}
         
-        try:
-            st.subheader(f"Prediction: {result_map[prediction[0]]}")
-        except KeyError as e:
-            st.error(f"Unexpected prediction value: {prediction[0]}. Error: {e}")
-            st.write(f"Result map keys: {result_map.keys()}")
+    try:
+        st.subheader(f"Prediction: {result_map[prediction[0]]}")
+    except KeyError as e:
+        st.error(f"Unexpected prediction value: {prediction[0]}. Error: {e}")
+        st.write(f"Result map keys: {result_map.keys()}")
