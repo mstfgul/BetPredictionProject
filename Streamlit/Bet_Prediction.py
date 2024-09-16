@@ -8,7 +8,33 @@ st.set_page_config(
     page_title="Football Match Prediction",
     page_icon="📊",)
 
+
+# Use custom CSS to center the image
+st.markdown(
+    """
+    <style>
+    .center {
+        display: flex;
+        justify-content: center;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# Display the centered image
+st.markdown(
+    """
+    <div class="center">
+        <img src="https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Ftse2.mm.bing.net%2Fth%3Fid%3DOIP.7Ptu3VwdYMUb6TVeMc2i3AHaJA%26pid%3DApi&f=1&ipt=70b97454c19a60d8ebe9dae6e76b35fcb7e22f27944bbc27c3b69071af2f7250&ipo=images" width="100">
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+
 # Connect to the PostgreSQL database and load the dataset
+
 db_url = "postgresql://admin:JVDdki5JwDKlAtHsFAdxL58tO9qQZh5j@dpg-crhvmi5umphs73cag3i0-a.frankfurt-postgres.render.com/football_p8l0"
 conn = psycopg2.connect(db_url)
 query = """
