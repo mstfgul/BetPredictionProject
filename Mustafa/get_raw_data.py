@@ -20,7 +20,7 @@ def get_csv_files(list_of_links):
     base_url = 'https://www.football-data.co.uk/'
     for link in list_of_links:
         response = requests.get(base_url + link)
-        with open('fixture_project/data/allcsv/'+ link.split('/')[1]+('.csv'), 'wb') as f:
+        with open('/Users/mustafagul/Desktop/fixture_project/data/allcsv/'+ link.split('/')[1]+('.csv'), 'wb') as f:
             f.write(response.content)
 
 

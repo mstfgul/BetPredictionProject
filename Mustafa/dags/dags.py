@@ -75,5 +75,7 @@ task_main = PythonOperator(
     dag=dag,
 )
 
+
+
 # Set task dependencies
 task_get_links >> task_get_csv_files >> task_merge_data >> task_main_process >> task_main

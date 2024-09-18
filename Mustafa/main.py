@@ -1,10 +1,8 @@
+import subprocess
 from get_raw_data import get_links, get_csv_files
 from mergedata import merge_data
 from data_fitting_model import main_process
 from model_training import main
-
-
-
 
 url = 'https://www.football-data.co.uk/belgiumm.php'
 string_to_find = 'Jupiler League'
@@ -15,3 +13,9 @@ if __name__ == '__main__':
     merge_data()
     main_process()
     main()
+
+    def run_streamlit_app():
+        subprocess.run(["streamlit", "run", "/Users/mustafagul/Desktop/fixture_project/Bet_Prediction.py"])
+
+    run_streamlit_app()
+

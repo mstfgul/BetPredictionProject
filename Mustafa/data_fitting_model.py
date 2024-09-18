@@ -72,8 +72,8 @@ def save_data(model_df, save_path):
 
 def main_process():
     # File paths
-    data_file_path = 'fixture_project/data/mergeddata/masterupdateafter2000.csv'
-    save_path = 'fixture_project/Model/model_df.csv'
+    data_file_path = '/Users/mustafagul/Desktop/fixture_project/data/mergeddata/masterupdateafter2000.csv'
+    save_path = '/Users/mustafagul/Desktop/fixture_project/Model/model_df.csv'
 
     # Load data
     df = pd.read_csv(data_file_path)

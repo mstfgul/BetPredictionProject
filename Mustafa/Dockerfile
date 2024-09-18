@@ -1,21 +1,13 @@
-# ?? not sure
 FROM python:3.11
 
-# main file
 WORKDIR fixture_project
 
-
-#requir...
 COPY requirements.txt ./
-
-#requirements install
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
-
-#allpyfilesanddags
 COPY . /fixture_project
 
+RUN airflow db init
 
-#app running
-CMD ["airflow", "webserver", "--port", "8080"]
+CMD ["sh", "-c", "airflow webserver --port 8080 & streamlit run Bet_Prediction.py"]

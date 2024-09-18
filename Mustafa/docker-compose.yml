@@ -1,0 +1,108 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    networks:
+      - airflow_net
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:latest
+    networks:
+      - airflow_net
+
+  webserver:
+    image: apache/airflow:2.6.0
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
+      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - AIRFLOW__CELERY__BROKER_URL=redis://redis:6379/0
+      - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@postgres/airflow
+      - AIRFLOW__CORE__FERNET_KEY=your_fernet_key
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+    networks:
+      - airflow_net
+    volumes:
+      - ./dags:/dags
+      - ./logs:/logs
+      - ./plugins:/opt/plugins
+    ports:
+      - "8080:8080"
+    command: webserver
+    restart: always
+
+  scheduler:
+    image: apache/airflow:2.6.0
+    depends_on:
+      - webserver
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
+      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - AIRFLOW__CELERY__BROKER_URL=redis://redis:6379/0
+      - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@postgres/airflow
+    networks:
+      - airflow_net
+    volumes:
+      - ./dags:/dags
+      - ./logs:logs
+      - ./plugins:/plugins
+    command: scheduler
+    restart: always
+
+  worker:
+    image: apache/airflow:2.6.0
+    depends_on:
+      - scheduler
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
+      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - AIRFLOW__CELERY__BROKER_URL=redis://redis:6379/0
+      - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@postgres/airflow
+    networks:
+      - airflow_net
+    volumes:
+      - ./dags:/dags
+      - ./logs:/logs
+      - ./plugins:/plugins
+    command: worker
+    restart: always
+
+  flower:
+    image: apache/airflow:2.6.0
+    depends_on:
+      - scheduler
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - AIRFLOW__CELERY__BROKER_URL=redis://redis:6379/0
+      - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@postgres/airflow
+    networks:
+      - airflow_net
+    ports:
+      - "5555:5555"
+    command: flower
+    restart: always
+
+  streamlit:
+    build: .
+    volumes:
+      - .:/app
+    ports:
+      - "8501:8501"
+    command: streamlit run /Bet_Prediction.py
+    restart: always
+
+networks:
+  airflow_net:
+
+volumes:
+  postgres_data:
