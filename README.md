@@ -44,20 +44,33 @@
 5. **Project Structure**
 
     📂 Pro Jupiler League-prediction
+   
 ├── 📁 data
 │   ├── 📂 raw               ## Raw data straight from the sources
+
 │   ├── 📂 processed         ## Cleaned and ready-to-use data
+
 │   └── 📂 features          ## Engineered features for modeling
+
 ├── 📁 notebooks             # Jupyter notebooks for EDA and model experiments
+
 ├── 📁 models                # Trained and saved models
+
 ├── 📁 src
 │   ├── 📂 data_processing   # Scripts for data cleaning and feature extraction
+
 │   ├── 📂 modeling          # Scripts for model training and evaluation
+
 │   ├── 📂 prediction        # Prediction generation scripts
+
 │   └── 📂 app               # Source code for the web application
+
 ├── 📁 tests                 # Unit tests to ensure robustness
+
 ├── 📝 README.md             # Project documentation
+
 └── 📄 requirements.txt      # Python dependencies
+
 
 
 5. **Deployement with streamlit on Render**
