@@ -45,9 +45,9 @@
 
     📂 Pro Jupiler League-prediction
 ├── 📁 data
-│   ├── 📂 raw               # Raw data straight from the sources
-│   ├── 📂 processed         # Cleaned and ready-to-use data
-│   └── 📂 features          # Engineered features for modeling
+│   ├── 📂 raw               ## Raw data straight from the sources
+│   ├── 📂 processed         ## Cleaned and ready-to-use data
+│   └── 📂 features          ## Engineered features for modeling
 ├── 📁 notebooks             # Jupyter notebooks for EDA and model experiments
 ├── 📁 models                # Trained and saved models
 ├── 📁 src
